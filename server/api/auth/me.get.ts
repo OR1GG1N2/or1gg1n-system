@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   
   return {
     user: session.user,
+    id: session.id,
     loggedInAt: session.loggedInAt,
   };
 });

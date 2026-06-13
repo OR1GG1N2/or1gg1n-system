@@ -59,5 +59,5 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return sendRedirect(event, '/cabinet')
+  return sendRedirect(event, '/dashboard/integrations')
 })

@@ -97,7 +97,7 @@ const toggleCollapse = () => {
         <div class="space-y-1">
           <span v-if="!isCollapsed || mobileOpen" class="px-2.5 text-[9px] font-bold uppercase tracking-wider text-zinc-600 block animate-fade">Инструменты</span>
           <NuxtLink 
-            to="/dashboard/overlays" 
+            to="/dashboard/widgets" 
             class="flex items-center justify-between rounded-lg px-2.5 py-2 text-xs font-medium transition-all hover:bg-zinc-900/50 hover:text-zinc-200" 
             active-class="bg-sky-950/30 text-sky-400 border border-sky-500/20 shadow-[0_0_15px_rgba(56,189,248,0.03)]"
           >
@@ -130,9 +130,9 @@ const toggleCollapse = () => {
             <span v-if="!isCollapsed || mobileOpen" class="animate-fade">Discord</span>
             <span v-else>DC</span>
           </a>
-          <a href="https://github.com" target="_blank" class="flex items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/60 py-1.5 text-[11px] font-medium hover:bg-zinc-800 hover:text-zinc-200 transition-colors">
-            <span v-if="!isCollapsed || mobileOpen" class="animate-fade">GitHub</span>
-            <span v-else>GH</span>
+          <a href="/api/auth/logout" target="_blank" class="flex items-center justify-center rounded-lg border border-red-800 bg-zinc-900/60 py-1.5 text-[11px] font-medium hover:bg-zinc-800 hover:text-zinc-200 transition-colors">
+            <span v-if="!isCollapsed || mobileOpen" class="animate-fade">LogOut</span>
+            <span v-else>LogOut</span>
           </a>
         </div>
       </div>

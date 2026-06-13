@@ -36,6 +36,13 @@
       "when": 1781354778712,
       "tag": "0004_short_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1781369661134,
+      "tag": "0005_hot_eternity",
+      "breakpoints": true
     }
   ]
 }

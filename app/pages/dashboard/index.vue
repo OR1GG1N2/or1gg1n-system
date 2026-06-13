@@ -7,8 +7,9 @@ definePageMeta({
   layout: 'dashboard' // Привязываем к нашему шаблону каркаса
 })
 
-const { clear, fetch } = useUserSession()
+const { clear, fetch, loggedIn, user: sessionUser,  } = useUserSession()
 const router = useRouter()
+
 
 // Забираем данные пользователя, которые для нас уже загрузил Layout
 const user = inject<any>('currentUser')

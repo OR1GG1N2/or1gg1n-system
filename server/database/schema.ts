@@ -77,4 +77,14 @@ export const TokenType = {
   PASSWORD_RESET: 'password_reset',
 } as const;
 
+export const widgets = sqliteTable('widgets', {
+  id: text('id').primaryKey(), // Строковый ID для безопасных OBS-ссылок
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  type: text('type').notNull(), // 'lastfm', 'chat' и т.д.
+  settings: text('settings', { mode: 'json' }).notNull(), // Drizzle сам сериализует JSON в текст для SQLite
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull()
+})
+
 export type TokenType = typeof TokenType[keyof typeof TokenType];

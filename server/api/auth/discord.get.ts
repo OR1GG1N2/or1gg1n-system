@@ -23,20 +23,6 @@ export default defineOAuthDiscordEventHandler({
           .from(users)
           .where(eq(users.email, user.email))
           .get()
-        
-        if (dbUser) {
-          // Обновляем существующего пользователя - добавляем discord_id
-          await db
-            .update(users)
-            .set({
-              discordId: user.id,
-              avatar: user.avatar,
-              updatedAt: new Date(),
-            })
-            .where(eq(users.id, dbUser.id))
-          
-          console.log('Updated existing user with Discord ID:', dbUser.email)
-        }
       }
       
       // 3. Создаём нового пользователя
@@ -51,23 +37,34 @@ export default defineOAuthDiscordEventHandler({
             discordId: user.id,
             email: user.email || null,
             name: user.global_name || user.username,
-            avatar: user.avatar,
-            isEmailVerified: user.verified || false, // Соответствует вашей схеме
+            avatar: user.avatar || null,
+            isEmailVerified: user.verified || false,
             createdAt: now,
             updatedAt: now,
           })
           .returning()
         
         dbUser = newUser[0]
-        console.log('New user created with ID:', dbUser.id)
       } else {
-        // 4. Обновляем время последнего входа для существующего пользователя
+        // 4. Обновляем существующего пользователя (один общий запрос)
+        const updateData: Record<string, any> = { 
+          updatedAt: new Date() 
+        }
+
+        // Если нашли по email, привязываем discordId
+        if (dbUser.discordId !== user.id) {
+          updateData.discordId = user.id
+        }
+
+        // Добавляем аватарку, только если её нет в базе, а в Discord она есть
+        if (!dbUser.avatar && user.avatar) {
+          updateData.avatar = user.avatar
+          dbUser.avatar = user.avatar // Обновляем локально для корректной сессии
+        }
+
         await db
           .update(users)
-          .set({ 
-            updatedAt: new Date(),
-            avatar: user.avatar // Обновляем аватар
-          })
+          .set(updateData)
           .where(eq(users.id, dbUser.id))
       }
       
@@ -78,15 +75,13 @@ export default defineOAuthDiscordEventHandler({
           discordId: user.id,
           name: dbUser.name,
           email: dbUser.email,
-          avatar: user.avatar,
+          avatar: dbUser.avatar, // Сюда попадёт либо старая из БД, либо только что добавленная
         },
         loggedInAt: Date.now(),
       })
       
       console.log('Session set, redirecting to cabinet...')
-      
-      // 6. Перенаправляем в личный кабинет
-      return sendRedirect(event, '/cabinet')
+      return sendRedirect(event, '/dashboard')
       
     } catch (error) {
       console.error('Discord OAuth error:', error)
