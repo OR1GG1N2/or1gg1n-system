@@ -1,10 +1,6 @@
-
-
 <script setup lang="ts">
-import { eq } from 'drizzle-orm';
-
 definePageMeta({
-  middleware: 'auth' // Защищаем страницу кабинета
+  middleware: 'auth'
 });
 
 const { loggedIn, user: sessionUser, clear, fetch } = useUserSession();
@@ -12,84 +8,60 @@ const router = useRouter();
 
 const user = ref<any>(null);
 const loading = ref(true);
+const activeTab = ref('dashboard');
 const showSettings = ref(false);
 const updating = ref(false);
-const updateError = ref('');
-const updateSuccess = ref('');
 
+const editForm = ref({ name: '', email: '', newPassword: '', avatar: '' });
 
-
-const editForm = ref({
-  name: '',
-  email: '',
-  newPassword: '',
-  avatar: ''
+// Моковые данные стримера
+const streamStats = ref({
+  revenue: 1450,
+  followers: 124,
+  subs: 12,
+  overlayUrl: 'https://api.yourservice.com/v1/widget/12345-abcde'
 });
 
-// Форматирование даты
-const formatDate = (date: string) => {
-  if (!date) return 'Недавно';
-  return new Date(date).toLocaleDateString('ru-RU', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
+const recentEvents = ref([
+  { id: 1, type: 'donation', user: 'Alexey_Pro', amount: '500 ₽', time: '2 мин назад', icon: 'i-heroicons-currency-dollar', color: 'text-green-400' },
+  { id: 2, type: 'sub', user: 'GamerGirl99', amount: 'Tier 1', time: '15 мин назад', icon: 'i-heroicons-star', color: 'text-purple-400' },
+  { id: 3, type: 'follow', user: 'NoobMaster', amount: '', time: '1 час назад', icon: 'i-heroicons-user-plus', color: 'text-blue-400' }
+]);
 
-// Загрузка данных пользователя
 const loadUserData = async () => {
   if (!sessionUser.value?.id) {
-    loading.value = false;
-    return;
+    loading.value = false; return;
   }
-  
   try {
     const response = await $fetch('/api/user/profile');
     user.value = response.user;
-    editForm.value.name = user.value.name || '';
-    editForm.value.email = user.value.email;
-    editForm.value.avatar = user.value.avatar || '';
+    editForm.value = { ...user.value, newPassword: '' };
   } catch (error) {
-    console.error('Ошибка загрузки профиля:', error);
+    console.error('Ошибка загрузки:', error);
   } finally {
     loading.value = false;
   }
 };
 
-// Обновление профиля
 const updateProfile = async () => {
   updating.value = true;
-  updateError.value = '';
-  updateSuccess.value = '';
-  
   try {
-    const response = await $fetch('/api/user/update', {
-      method: 'PUT',
-      body: editForm.value
-    });
-    
-    updateSuccess.value = response.message;
-    
-    // Обновляем локальные данные
+    const response = await $fetch('/api/user/update', { method: 'PUT', body: editForm.value });
     user.value = response.user;
-    
-    // Обновляем сессию
     await fetch();
-    
-    // Закрываем модальное окно через 2 секунды
-    setTimeout(() => {
-      showSettings.value = false;
-      updateSuccess.value = '';
-    }, 2000);
-    
-  } catch (err: any) {
-    updateError.value = err.data?.statusMessage || 'Ошибка обновления';
+    showSettings.value = false;
+  } catch (err) {
+    console.error(err);
   } finally {
     updating.value = false;
   }
 };
 
-// Выход
+const copyOverlayUrl = () => {
+  navigator.clipboard.writeText(streamStats.value.overlayUrl);
+  alert('Ссылка скопирована!');
+};
+
 const handleLogout = async () => {
   await $fetch('/api/auth/logout');
   await clear();
@@ -97,104 +69,163 @@ const handleLogout = async () => {
   await router.push('/');
 };
 
-// Загружаем данные при монтировании
 onMounted(() => {
-  if (loggedIn.value) {
-    loadUserData();
-  } else {
-    loading.value = false;
-  }
+  loggedIn.value ? loadUserData() : (loading.value = false);
 });
+
+// Навигация для UVerticalNavigation
+const navLinks = computed(() => [
+  [
+    { label: 'Сводка', icon: 'i-heroicons-chart-bar', click: () => activeTab.value = 'dashboard' },
+    { label: 'Алерты', icon: 'i-heroicons-bell', click: () => activeTab.value = 'alerts' },
+    { label: 'Оверлеи', icon: 'i-heroicons-paint-brush', click: () => activeTab.value = 'overlays' },
+    { label: 'Чат-бот', icon: 'i-heroicons-chat-bubble-left-ellipsis', click: () => activeTab.value = 'bot' },
+    { label: 'Донаты', icon: 'i-heroicons-banknotes', click: () => activeTab.value = 'donations' }
+  ],
+  [
+    { label: 'Настройки', icon: 'i-heroicons-cog-8-tooth', click: () => showSettings.value = true },
+    { label: 'Выйти', icon: 'i-heroicons-arrow-left-on-rectangle', click: handleLogout }
+  ]
+]);
 </script>
 
 <template>
-     <div class="absolute inset-0 z-0 opacity-60 pointer-events-none" style="
-      background-image: 
-        linear-gradient(to right, rgba(56,189,248,0.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(56,189,248,0.05) 1px, transparent 1px),
-        radial-gradient(circle at 50% 0%, rgba(14,165,233,0.15) 0%, rgba(56,189,248,0.05) 40%, transparent 70%);
-      background-size: 40px 40px, 40px 40px, 100% 100%;
-    "></div>
-  <div class="min-h-screen bg-[#040b16] text-white font-unbounded p-6 md:p-12">
-    <!-- Фоновый паттерн -->
-    <div class="fixed inset-0 z-0 opacity-40 pointer-events-none" style="background-image: radial-gradient(circle at 50% 0%, rgba(14,165,233,0.1) 0%, transparent 70%);"></div>
+  <div class="min-h-screen bg-gray-900 text-white p-4 sm:p-8">
+    <UContainer>
+      <div v-if="loading" class="flex justify-center py-20">
+        <UIcon name="i-heroicons-arrow-path" class="animate-spin text-4xl text-primary" />
+      </div>
 
-    <div class="relative z-10 max-w-4xl mx-auto">
-      <h1 class="text-3xl md:text-4xl font-bold mb-10 tracking-tight">Личный кабинет</h1>
-
-      <div v-if="loading" class="text-[#94a3b8] text-center py-20">Загрузка данных...</div>
-
-      <div v-else-if="user" class="space-y-6">
-        <!-- Профиль -->
-        <div class="bg-[#061121] border border-[#102a4d] rounded-2xl p-8 flex flex-col md:flex-row gap-8 items-center backdrop-blur-sm">
-          <img :src="user.avatar || 'https://placehold.net/avatar-2.svg'" alt="Аватар" class="w-24 h-24 rounded-full border border-[#1e3a5f]" />
-          
-          <div class="flex-grow text-center md:text-left">
-            <h2 class="text-2xl font-bold mb-1">{{ user.name || 'Пользователь' }}</h2>
-            <p class="text-[#64748b] text-sm mb-2">{{ user.email }}</p>
-            <p class="text-[#38bdf8] text-xs uppercase tracking-widest font-bold">Участник с {{ formatDate(user.createdAt) }}</p>
-          </div>
-
-          <button @click="handleLogout" class="px-6 py-3 border border-red-500/20 text-red-400 hover:bg-red-500/10 rounded-xl transition-all text-sm font-bold">
-            Выйти
-          </button>
-        </div>
-
-        <!-- Статистика -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-[#061121] border border-[#102a4d] rounded-2xl p-8 backdrop-blur-sm">
-            <h3 class="text-[#94a3b8] text-sm mb-4 uppercase tracking-wider font-bold">Статистика</h3>
-            <div class="flex gap-8">
-              <div>
-                <div class="text-3xl font-black">{{ user.serversCount || 0 }}</div>
-                <div class="text-[#64748b] text-xs">Серверов</div>
-              </div>
-              <div>
-                <div class="text-3xl font-black">{{ user.playersCount || 0 }}</div>
-                <div class="text-[#64748b] text-xs">Игроков</div>
+      <div v-else-if="user" class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        
+        <!-- Сайдбар -->
+        <div class="lg:col-span-1 space-y-4">
+          <UCard :ui="{ body: { padding: 'p-4' } }">
+            <div class="flex items-center gap-3">
+              <UAvatar :src="user.avatar || 'https://placehold.net/avatar-2.svg'" size="lg" />
+              <div class="overflow-hidden">
+                <div class="font-semibold truncate">{{ user.name || 'Стример' }}</div>
+                <div class="text-xs text-green-400 flex items-center gap-1">
+                  <UIcon name="i-heroicons-signal" /> Online
+                </div>
               </div>
             </div>
-          </div>
+          </UCard>
 
-          <div class="bg-[#061121] border border-[#102a4d] rounded-2xl p-8 backdrop-blur-sm flex items-center justify-between">
+          <UCard :ui="{ body: { padding: 'p-2' } }">
+            <UVerticalNavigation :links="navLinks" />
+          </UCard>
+        </div>
+
+        <!-- Рабочая область -->
+        <div class="lg:col-span-4 space-y-6">
+          
+          <!-- Шапка -->
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div>
-              <h3 class="text-[#94a3b8] text-sm mb-1 uppercase tracking-wider font-bold">Аккаунт</h3>
-              <p class="text-sm">Управление профилем</p>
+              <h1 class="text-2xl font-bold">Сводка канала</h1>
+              <p class="text-sm text-gray-400">Статистика за текущую сессию</p>
             </div>
-            <button @click="showSettings = true" class="px-6 py-3 bg-[#0ea5e9] hover:bg-[#0284c7] rounded-xl font-bold text-sm transition-all shadow-[0_0_20px_rgba(14,165,233,0.2)]">
-              Настройки
-            </button>
+            
+            <!-- Ссылка на оверлей -->
+            <UButtonGroup size="sm" orientation="horizontal">
+              <UButton color="gray" variant="solid" label="URL Оверлея:" class="pointer-events-none" />
+              <UInput v-model="streamStats.overlayUrl" type="password" readonly class="w-32 sm:w-48" />
+              <UButton icon="i-heroicons-clipboard-document" color="primary" @click="copyOverlayUrl" />
+            </UButtonGroup>
           </div>
+
+          <!-- Метрики -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <UCard>
+              <template #header>
+                <div class="text-sm font-medium text-gray-400">Донаты (сегодня)</div>
+              </template>
+              <div class="text-3xl font-bold text-green-400">{{ streamStats.revenue }} ₽</div>
+            </UCard>
+
+            <UCard>
+              <template #header>
+                <div class="text-sm font-medium text-gray-400">Новые фолловеры</div>
+              </template>
+              <div class="text-3xl font-bold text-blue-400">+{{ streamStats.followers }}</div>
+            </UCard>
+
+            <UCard>
+              <template #header>
+                <div class="text-sm font-medium text-gray-400">Новые сабы</div>
+              </template>
+              <div class="text-3xl font-bold text-purple-400">+{{ streamStats.subs }}</div>
+            </UCard>
+          </div>
+
+          <!-- Лента событий и график -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <UCard class="lg:col-span-1" :ui="{ body: { padding: 'p-0' } }">
+              <template #header>
+                <div class="flex justify-between items-center">
+                  <span class="font-semibold">Лента событий</span>
+                  <UButton size="xs" color="gray" variant="ghost">Пауза</UButton>
+                </div>
+              </template>
+              
+              <div class="h-[300px] overflow-y-auto p-2 space-y-1">
+                <div v-for="event in recentEvents" :key="event.id" class="p-3 hover:bg-gray-800 rounded-lg flex justify-between items-start transition-colors">
+                  <div class="flex gap-3">
+                    <UIcon :name="event.icon" :class="[event.color, 'text-xl']" />
+                    <div>
+                      <div class="text-sm font-medium">{{ event.user }}</div>
+                      <div class="text-xs text-gray-400">{{ event.amount || 'Подписался' }}</div>
+                    </div>
+                  </div>
+                  <span class="text-[10px] text-gray-500">{{ event.time }}</span>
+                </div>
+              </div>
+            </UCard>
+
+            <UCard class="lg:col-span-2 flex items-center justify-center min-h-[300px]">
+              <div class="text-center text-gray-500">
+                <UIcon name="i-heroicons-presentation-chart-line" class="text-5xl mb-2 mx-auto" />
+                <p class="text-sm">График активности (место для графика)</p>
+              </div>
+            </UCard>
+          </div>
+
         </div>
       </div>
+    </UContainer>
 
-      <div v-else class="text-center py-20">
-        <p class="text-[#94a3b8]">Вы не авторизованы</p>
-        <NuxtLink to="/login" class="mt-4 inline-block px-8 py-3 bg-[#0ea5e9] rounded-xl font-bold">Войти</NuxtLink>
-      </div>
-    </div>
+    <!-- Модалка настроек -->
+    <UModal v-model="showSettings">
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Настройки профиля</h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="showSettings = false" />
+          </div>
+        </template>
 
-    <!-- Модальное окно -->
-    <div v-if="showSettings" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="showSettings = false">
-      <div class="bg-[#0f1c2e] border border-[#1e3a5f] p-8 rounded-2xl w-full max-w-md shadow-2xl">
-        <h2 class="text-xl font-bold mb-6">Настройки профиля</h2>
         <form @submit.prevent="updateProfile" class="space-y-4">
-          <input v-model="editForm.name" type="text" placeholder="Имя" class="w-full bg-[#061121] border border-[#1e3a5f] p-3 rounded-xl focus:border-[#0ea5e9] outline-none" />
-          <input v-model="editForm.email" type="email" placeholder="Email" class="w-full bg-[#061121] border border-[#1e3a5f] p-3 rounded-xl focus:border-[#0ea5e9] outline-none" />
-          <input v-model="editForm.newPassword" type="password" placeholder="Новый пароль" class="w-full bg-[#061121] border border-[#1e3a5f] p-3 rounded-xl focus:border-[#0ea5e9] outline-none" />
-          <input v-model="editForm.avatar" type="text" placeholder="URL на аватар" class="w-full bg-[#061121] border border-[#1e3a5f] p-3 rounded-xl focus:border-[#0ea5e9] outline-none" />
-          
-          <div class="flex gap-3 pt-4">
-            <button type="button" @click="showSettings = false" class="flex-1 py-3 bg-[#061121] rounded-xl">Отмена</button>
-            <button type="submit" class="flex-1 py-3 bg-[#0ea5e9] rounded-xl font-bold">Сохранить</button>
+          <UFormGroup label="Имя">
+            <UInput v-model="editForm.name" />
+          </UFormGroup>
+          <UFormGroup label="Email">
+            <UInput v-model="editForm.email" type="email" />
+          </UFormGroup>
+          <UFormGroup label="Новый пароль" hint="Оставь пустым, если не меняешь">
+            <UInput v-model="editForm.newPassword" type="password" />
+          </UFormGroup>
+          <UFormGroup label="URL Аватара">
+            <UInput v-model="editForm.avatar" />
+          </UFormGroup>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <UButton color="gray" variant="soft" @click="showSettings = false">Отмена</UButton>
+            <UButton type="submit" color="primary" :loading="updating">Сохранить</UButton>
           </div>
         </form>
-      </div>
-    </div>
+      </UCard>
+    </UModal>
   </div>
 </template>
-
-<style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;700;900&display=swap');
-.font-unbounded { font-family: 'Unbounded', sans-serif; }
-</style>

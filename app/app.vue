@@ -6,6 +6,6 @@
   </div>
 </template>
 
-<script setup>
+<script >
 // Ваша логика если нужна
 </script>
