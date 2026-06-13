@@ -18,6 +18,7 @@ export const users = sqliteTable('users', {
   discordId: text('discord_id').unique(),
   avatar: text('avatar'),
 });
+
 export const admins = sqliteTable('admins', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -42,6 +43,25 @@ export const tokens = sqliteTable('tokens', {
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
+export const integrations = sqliteTable('integrations', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  provider: text('provider').notNull(), // например: 'twitch', 'spotify', 'youtube'
+  providerUserId: text('provider_user_id'), // ID пользователя в самом сервисе (например, Twitch ID)
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token'),
+  scopes: text('scopes'), // права доступа через запятую, если нужно
+  expiresAt: integer('expires_at', { mode: 'timestamp' }), // время жизни access токена
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export type Integration = typeof integrations.$inferSelect;
+export type NewIntegration = typeof integrations.$inferInsert;
 
 // Типы
 export type User = typeof users.$inferSelect;

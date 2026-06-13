@@ -29,6 +29,13 @@
       "when": 1780696255697,
       "tag": "0003_calm_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1781354778712,
+      "tag": "0004_short_lord_hawal",
+      "breakpoints": true
     }
   ]
 }
